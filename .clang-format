@@ -1,0 +1,9 @@
+BasedOnStyle: Chromium
+IndentWidth: 2
+ColumnLimit: 160
+SpaceAfterCStyleCast: false
+UseTab: Never
+AllowShortIfStatementsOnASingleLine: false
+AlignTrailingComments: false
+SpacesBeforeTrailingComments: 1
+AlignConsecutiveMacros: Consecutive
