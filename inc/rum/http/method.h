@@ -5,5 +5,5 @@ namespace Rum::HTTP {
 
 enum Method { GET, HEAD, POST, PUT, DELETE, CONNECT, OPTIONS, TRACE };
 
-std::string method_to_string(Method m);
+std::string to_string(Method method);
 } // namespace Rum::HTTP

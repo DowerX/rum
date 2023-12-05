@@ -4,16 +4,18 @@ project(Rum VERSION 1.0)
 
 # compiler setup
 set(CMAKE_CXX_COMPILER "clang++")
-#set(CMAKE_CXX_STANDARD 23)
-#set(CMAKE_CXX_STANDARD_REQUIRED true)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror") # warnings
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2b")            # std c++23
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra -Werror") # warnings and errors
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++2b")            # std c++23 for clang
+if (STATIC)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static")             # static
+endif()
 
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static") # static compile
-# set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")      # debug symbols
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")       # enable optimisations
+if (DEBUG)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")                  # debug symbols
+endif()
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")                   # optimisations
 
 # IDE setup (clangd)
 set(CMAKE_EXPORT_COMPILE_COMMANDS true)
@@ -28,4 +30,9 @@ add_custom_target(run
   COMMAND $<TARGET_FILE:server.bin>
   DEPENDS server.bin
   COMMENT "Running server.bin"
+)
+
+add_custom_target(docker
+  COMMAND docker build -t dowerx/rum:${CMAKE_PROJECT_VERSION} ..
+  COMMENT "Building docker image"
 )

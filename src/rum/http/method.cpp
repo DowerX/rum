@@ -1,8 +1,8 @@
 #include <rum/http/method.h>
 
 namespace Rum::HTTP {
-std::string method_to_string(Method m) {
-  switch (m) {
+std::string to_string(Method method) {
+  switch (method) {
     case GET:
       return "GET";
     case HEAD:

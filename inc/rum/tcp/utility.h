@@ -5,6 +5,6 @@
 
 namespace Rum::TCP {
 
-std::string address_to_string(sockaddr_in address);
+std::string to_string(const sockaddr_in& address);
 
 } // namespace Rum::TCP

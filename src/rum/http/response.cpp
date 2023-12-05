@@ -5,8 +5,8 @@
 #include <stdexcept>
 
 namespace Rum::HTTP {
-std::string status_code_to_string(int code) {
-  static std::map<int, std::string> codes{{100, "Continue"},
+std::string to_string(int code) {
+  static const std::map<int, std::string> codes{{100, "Continue"},
                                           {101, "Switching Protocols"},
                                           {102, "Processing"},
                                           {103, "Early Hints"},
@@ -77,15 +77,19 @@ std::string status_code_to_string(int code) {
 
 void Response::send_header(const std::string& name, const std::string& value) {
   if (!sent_header) {
-    std::string resp("HTTP/1.1 " + std::to_string(code) + " " + status_code_to_string(code) + "\r\n");
-    if (-1 == send(client_sock, resp.c_str(), resp.size(), 0))
+    std::string resp("HTTP/1.1 " + std::to_string(code) + " " + to_string(code) + "\r\n");
+    if (-1 == send(client_sock, resp.c_str(), resp.size(), 0)) {
+      closed = true;
       throw TCP::Error(TCP::Error::CLOSED);
+    }
     sent_header = true;
   }
 
   std::string header = name + ": " + value + "\r\n";
-  if (-1 == send(client_sock, header.c_str(), header.size(), 0))
+  if (-1 == send(client_sock, header.c_str(), header.size(), 0)) {
+    closed = true;
     throw TCP::Error(TCP::Error::CLOSED);
+  }
 }
 
 void Response::send_body(const std::string& value) {
@@ -94,18 +98,22 @@ void Response::send_body(const std::string& value) {
   }
 
   if (!sent_body) {
-    if (-1 == send(client_sock, "\r\n", 2, 0))
+    if (-1 == send(client_sock, "\r\n", 2, 0)) {
+      closed = true;
       throw TCP::Error(TCP::Error::CLOSED);
+    }
     sent_body = true;
   }
 
-  if (-1 == send(client_sock, value.c_str(), value.size(), 0))
+  if (-1 == send(client_sock, value.c_str(), value.size(), 0)) {
+    closed = true;
     throw TCP::Error(TCP::Error::CLOSED);
+  }
 }
 
 Response::~Response() {
-  if (!sent_header) {
-    std::string resp("HTTP/1.1 " + std::to_string(code) + " " + status_code_to_string(code));
+  if (!sent_header && !closed) {
+    std::string resp("HTTP/1.1 " + std::to_string(code) + " " + to_string(code));
     send(client_sock, resp.c_str(), resp.size(), 0);
   }
 }

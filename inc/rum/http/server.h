@@ -11,8 +11,8 @@
 #include "request.h"
 #include "response.h"
 
-#define WORKERS    10
-#define BUFFER_LEN 8196
+#define DEFAULT_WORKER_COUNT 10
+#define DEFAULT_BUFFER_SIZE  8196
 
 namespace Rum::HTTP {
 
@@ -25,6 +25,8 @@ class Server : public Rum::TCP::Server {
     sockaddr_in sockaddr;
   };
 
+  const size_t buffer_size;
+
   std::vector<std::thread> workers;
   std::queue<Task> tasks;
   std::mutex mtx;
@@ -36,8 +38,8 @@ class Server : public Rum::TCP::Server {
   void handler(int client_sock, const sockaddr_in& client_address, char* buffer);
 
  public:
-  Server(unsigned int port, size_t worker_count);
-  Server(unsigned int port) : Server(port, WORKERS) {}
+  Server(unsigned int port, size_t worker_count, size_t buffer_size);
+  Server(unsigned int port) : Server(port, DEFAULT_WORKER_COUNT, DEFAULT_BUFFER_SIZE) {}
   ~Server();
   void listen();
 

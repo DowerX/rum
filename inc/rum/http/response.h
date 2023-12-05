@@ -8,10 +8,11 @@ class Response {
   const int client_sock;
   bool sent_header;
   bool sent_body;
+  bool closed;
   unsigned int code;
 
  public:
-  Response(int client_sock) : client_sock(client_sock), sent_header(false), sent_body(false), code(200) {}
+  Response(int client_sock) : client_sock(client_sock), sent_header(false), sent_body(false), closed(false), code(200) {}
   ~Response();
 
   void send_header(const std::string& name, const std::string& value);

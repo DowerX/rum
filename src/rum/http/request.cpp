@@ -1,18 +1,24 @@
 #include <rum/http/request.h>
+#include <format>
 #include <iostream>
 #include <string>
+#include "rum/http/method.h"
 
 namespace Rum::HTTP {
 
 Request::operator std::string() const {
-  std::string result("Request{\n\tmethod: " + method_to_string(method) + "\n\tpath: \"" + path + "\"\n\theaders:\n");
-  for (auto header : get_headers()) {
-    result += "\t\t\"" + header.first + "\": \"" + header.second + "\"\n";
+  std::string headers_string;
+  for (auto header : headers) {
+    headers_string += "\t\t'" + header.first + "': '" + header.second + "'\n";
   }
-
-  result += "\tbody: \"" + body + "\"\n}";
-
-  return result;
+  return std::vformat(
+      "Request{{\n"
+      "\tmethod:  {}\n"
+      "\t{}\n"
+      "\theaders: \n{}"
+      "\tbody:    \n'{}'"
+      "}}",
+      std::make_format_args(to_string(method), (std::string)uri, headers_string, body));
 }
 
 std::ostream& operator<<(std::ostream& stream, const Request req) {

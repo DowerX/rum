@@ -1,14 +1,16 @@
+#include "rum/tcp/server.h"
 #include <rum/http/server.h>
 #include <rum/tcp/error.h>
 #include <rum/tcp/utility.h>
 #include <iostream>
 #include <regex>
+#include <string>
 
 namespace Rum::HTTP {
-Server::Server(unsigned int port, size_t worker_count) : Rum::TCP::Server(port), stop(false) {
+Server::Server(unsigned int port, size_t worker_count, size_t buffer_size) : Rum::TCP::Server(port), buffer_size(buffer_size), stop(false) {
   for (size_t i = 0; i < worker_count; i++) {
     std::thread worker([this, i]() {
-      char* buffer = new char[BUFFER_LEN]();
+      char* buffer = new char[this->buffer_size]();
 
       while (true) {
         Task task;
@@ -30,7 +32,7 @@ Server::Server(unsigned int port, size_t worker_count) : Rum::TCP::Server(port),
 
         handler(task.client_sock, task.sockaddr, buffer);
         if (int status = close(task.client_sock); status == TCP::Error::UNKNOWN) {
-          std::cerr << TCP::address_to_string(task.sockaddr) << ": " << TCP::Error((TCP::Error::Type)status).what() << std::endl;
+          std::cerr << TCP::to_string(task.sockaddr) << ": " << TCP::Error((TCP::Error::Type)status).what() << std::endl;
         }
       }
     });
@@ -85,7 +87,7 @@ Method string_to_method(std::string text) {
 }
 
 void Server::handler(int client_sock, const sockaddr_in& client_address, char* buffer) {
-  std::string address = TCP::address_to_string(client_address);
+  std::string address = TCP::to_string(client_address);
   std::cout << address << ": connected" << std::endl;
 
   Request request;
@@ -96,7 +98,7 @@ void Server::handler(int client_sock, const sockaddr_in& client_address, char* b
   std::string message;
 
   while (true) {
-    ssize_t recieved = recv(client_sock, buffer, BUFFER_LEN, 0);
+    ssize_t recieved = recv(client_sock, buffer, buffer_size, 0);
     switch (recieved) {
       case TCP::Error::CLOSED:
         std::cout << address << ": connection closed" << std::endl;
@@ -109,10 +111,11 @@ void Server::handler(int client_sock, const sockaddr_in& client_address, char* b
     message += std::string(buffer, buffer + recieved);
 
     if (stage == METHOD && message.contains("\r\n")) {
-      std::regex method_regex("(GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE) (\\/.*) .*");
+      std::regex method_regex("(GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE) (\\/.*) HTTP.*");
       std::smatch match;
       if (std::regex_match(message.cbegin(), message.cbegin() + message.find("\r\n"), match, method_regex)) {
-        request = Request(string_to_method(match.str(1)), match.str(2));
+        // create request object
+        request = Request(string_to_method(match.str(1)), URI("http://0.0.0.0:" + std::to_string(TCP::Server::get_port()) + match.str(2)));
         message = message.substr(message.find("\r\n"));
         stage = HEADER;
       } else {
@@ -148,9 +151,10 @@ void Server::handler(int client_sock, const sockaddr_in& client_address, char* b
     bool found = false;
 
     for (auto it = paths[request.get_method()].cbegin(); it != paths[request.get_method()].cend(); it++) {
-      if (std::regex_match(request.get_path(), it->first)) {
+      if (std::regex_match(request.get_uri().get_path(), it->first)) {
         it->second(request, resp);
         found = true;
+        break;
       }
     }
 

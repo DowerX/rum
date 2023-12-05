@@ -3,20 +3,21 @@
 #include <rum/tcp/server.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <csignal>
 #include <functional>
 #include <string>
 
-#define MAX_PENDING 10
-
 namespace Rum::TCP {
 
-std::string address_to_string(sockaddr_in address) {
+std::string to_string(const sockaddr_in& address) {
   return std::string(inet_ntoa(address.sin_addr)) + ":" + std::to_string(ntohs(address.sin_port));
 }
 
-Server::Server(unsigned short port) : sock(socket(AF_INET, SOCK_STREAM, 0)), stop(false) {
+Server::Server(unsigned short port) : sock(socket(AF_INET, SOCK_STREAM, 0)), port(port), stop(false) {
   if (sock == -1)
     throw Error(Error::UNKNOWN);
+
+  std::signal(SIGPIPE, SIG_IGN);
 
   sockaddr_in address = {.sin_family = AF_INET, .sin_port = htons(port), .sin_addr = {.s_addr = INADDR_ANY}};
 
@@ -28,10 +29,9 @@ Server::~Server() {
   end();
 }
 
-void Server::listen(std::function<void(int, sockaddr_in)> handler) const {
+void Server::listen(const std::function<void(int, sockaddr_in)>& handler) const {
   if (::listen(sock, MAX_PENDING) == -1)
     throw Error(Error::UNKNOWN);
-  ;
 
   while (!stop) {
     sockaddr_in client_address;
