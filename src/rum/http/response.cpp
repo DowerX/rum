@@ -4,6 +4,7 @@
 #include <format>
 #include <map>
 #include <stdexcept>
+#include <string>
 
 namespace Rum::HTTP {
 std::string to_string(int code) {
@@ -81,8 +82,8 @@ Response::~Response() {
   for (auto header : headers) {
     headers_string += header.first + ": " + header.second + "\r\n";
   }
-  for (auto cookie : cookies) {
-    headers_string += "Set-cookie: " + cookie.first + "=" + cookie.second + "\r\n";
+  for (Cookie& cookie : cookies) {
+    headers_string += "Set-cookie: " + (std::string)cookie + "\r\n";
   }
 
   std::string message = std::vformat(

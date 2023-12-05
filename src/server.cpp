@@ -35,6 +35,12 @@ int main(int argc, char** argv) {
       resp.body = "<h1>asd</h1><pre>" + (std::string)req + "</pre>";
     });
 
+    server->add_path<Rum::HTTP::GET>("/cookie", [](const Rum::HTTP::Request& req, Rum::HTTP::Response& resp) {
+      std::cout << "request accepted" << std::endl;
+      resp.cookies.push_back(Rum::HTTP::Cookie("testCookie", "valueOfCookie", "/", 60*60));
+      resp.body = "<h1>Cookie</h1><pre>" + (std::string)req + "</pre>";
+    });
+
     server->add_path<Rum::HTTP::GET>("/.*", [](const Rum::HTTP::Request& req, Rum::HTTP::Response& resp) {
       std::cout << "request accepted" << std::endl;
       resp.body = "<h1>Hello World</h1><pre>" + (std::string)req + "</pre>";

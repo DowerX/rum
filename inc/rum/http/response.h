@@ -1,7 +1,9 @@
 #pragma once
 
+#include <rum/http/cookie.h>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace Rum::HTTP {
 class Response {
@@ -18,7 +20,7 @@ class Response {
       this->code = code;
   }
 
-  std::map<std::string, std::string> cookies;
+  std::vector<Cookie> cookies;
   std::map<std::string, std::string> headers;
   std::string body;
 };
