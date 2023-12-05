@@ -1,8 +1,8 @@
+#include <rum/http/method.h>
 #include <rum/http/request.h>
 #include <format>
 #include <iostream>
 #include <string>
-#include "rum/http/method.h"
 
 namespace Rum::HTTP {
 
@@ -16,7 +16,7 @@ Request::operator std::string() const {
       "\tmethod:  {}\n"
       "\t{}\n"
       "\theaders: \n{}"
-      "\tbody:    \n'{}'"
+      "\tbody:    '{}'\n"
       "}}",
       std::make_format_args(to_string(method), (std::string)uri, headers_string, body));
 }

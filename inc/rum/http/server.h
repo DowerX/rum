@@ -7,9 +7,9 @@
 #include <queue>
 #include <regex>
 #include <vector>
-#include "../tcp/server.h"
-#include "request.h"
-#include "response.h"
+#include <rum/tcp/server.h>
+#include <rum/http/request.h>
+#include <rum/http/response.h>
 
 #define DEFAULT_WORKER_COUNT 10
 #define DEFAULT_BUFFER_SIZE  8196

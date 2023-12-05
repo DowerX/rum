@@ -1,6 +1,6 @@
-#include "rum/tcp/server.h"
 #include <rum/http/server.h>
 #include <rum/tcp/error.h>
+#include <rum/tcp/server.h>
 #include <rum/tcp/utility.h>
 #include <iostream>
 #include <regex>
@@ -101,10 +101,10 @@ void Server::handler(int client_sock, const sockaddr_in& client_address, char* b
     ssize_t recieved = recv(client_sock, buffer, buffer_size, 0);
     switch (recieved) {
       case TCP::Error::CLOSED:
-        std::cout << address << ": connection closed" << std::endl;
+        std::cerr << address << ": connection closed" << std::endl;
         return;
       case TCP::Error::UNKNOWN:
-        std::cout << "socket error" << std::endl;
+        std::cerr << "socket error" << std::endl;
         return;
     }
 
@@ -114,8 +114,12 @@ void Server::handler(int client_sock, const sockaddr_in& client_address, char* b
       std::regex method_regex("(GET|HEAD|POST|PUT|DELETE|CONNECT|OPTIONS|TRACE) (\\/.*) HTTP.*");
       std::smatch match;
       if (std::regex_match(message.cbegin(), message.cbegin() + message.find("\r\n"), match, method_regex)) {
-        // create request object
-        request = Request(string_to_method(match.str(1)), URI("http://0.0.0.0:" + std::to_string(TCP::Server::get_port()) + match.str(2)));
+        try {
+          request = Request(string_to_method(match.str(1)), URI("http://0.0.0.0:" + std::to_string(TCP::Server::get_port()) + match.str(2)));
+        } catch (std::exception&) {
+          return;
+        }
+
         message = message.substr(message.find("\r\n"));
         stage = HEADER;
       } else {
@@ -127,7 +131,29 @@ void Server::handler(int client_sock, const sockaddr_in& client_address, char* b
       std::regex header_regex("(.*): (.*)");
       for (std::sregex_iterator it = std::sregex_iterator(message.cbegin(), message.cbegin() + message.find("\r\n\r\n"), header_regex);
            it != std::sregex_iterator(); it++) {
-        request.set_header(it->str(1), it->str(2));
+        std::string key(it->str(1));
+        std::string value(it->str(2));
+
+        if (key == "Host") {
+          if (size_t pos = value.find(':'); pos != value.npos) {
+            request.get_uri().set_host(value.substr(0, pos));
+            request.get_uri().set_port(value.substr(pos + 1));
+          } else {
+            request.get_uri().set_host(value);
+          }
+        } else if (key == "Cookie") {
+          std::stringstream cookies_string(value);
+          std::string cookie;
+          while (std::getline(cookies_string, cookie, ';')) {
+            if (size_t pos = cookie.find('='); pos != cookie.npos) {
+              request.set_cookie(cookie.substr(0, pos), cookie.substr(pos + 1));
+            } else {
+              return;
+            }
+          }
+        } else {
+          request.set_header(it->str(1), it->str(2));
+        }
       }
       message = message.substr(message.find("\r\n\r\n"));
 
@@ -143,10 +169,9 @@ void Server::handler(int client_sock, const sockaddr_in& client_address, char* b
     }
   }
 
-  std::cout << request << std::endl;
-
   try {
     Response resp(client_sock);
+    resp.headers["Content-type"] = "text/html";
 
     bool found = false;
 
@@ -160,7 +185,7 @@ void Server::handler(int client_sock, const sockaddr_in& client_address, char* b
 
     if (!found) {
       resp.set_code(404);
-      resp.send_body("<h1>404: Page not found :C</h1>");
+      resp.body = "<h1>404: Page not found :C</h1>";
     }
   } catch (std::out_of_range) {
   } catch (TCP::Error) {

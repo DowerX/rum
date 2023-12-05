@@ -4,10 +4,6 @@
 #include <regex>
 #include <string>
 
-#define MATCH(var, i)   \
-  if (match[i].matched) \
-    var = match.str(i);
-
 namespace Rum::HTTP {
 
 URI::operator std::string() const {
@@ -38,6 +34,10 @@ URI::URI(const std::string& uri) {
   std::cout << uri << std::endl;
 
   if (std::regex_match(uri.cbegin(), uri.cend(), match, uri_regex)) {
+#define MATCH(var, i)   \
+  if (match[i].matched) \
+    var = match.str(i);
+
     MATCH(scheme, 2)
     MATCH(user, 4)
     MATCH(password, 6)

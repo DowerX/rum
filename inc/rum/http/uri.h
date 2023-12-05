@@ -29,6 +29,9 @@ class URI {
   const std::map<std::string, std::string>& get_parameters() const { return parameters; }
   const std::string& get_fragment() const { return fragment; }
 
+  void set_host(const std::string& host) { this->host = host; }
+  void set_port(const std::string& port) { this->port = port; }
+
   operator std::string() const;
 };
 } // namespace Rum::HTTP

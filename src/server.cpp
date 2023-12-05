@@ -10,7 +10,7 @@ int main(int argc, char** argv) {
   Flags::Parser parser;
   int* port = parser.add<int>("port", "tcp port number", false, 8080);
   unsigned long int* workers = parser.add<unsigned long int>("workers", "number of worker threads", false, 10);
-  
+
   bool* help = parser.add<bool>("help", "print help", false, false);
 
   if (!parser.parse(argc, argv) || *help) {
@@ -29,14 +29,15 @@ int main(int argc, char** argv) {
       server->end();
     });
 
-    server->add_path<Rum::HTTP::GET>("/asd", [](const Rum::HTTP::Request& req, Rum::HTTP::Response& resp) {
+    server->add_path<Rum::HTTP::GET>("/asd(/?|/.*)", [](const Rum::HTTP::Request& req, Rum::HTTP::Response& resp) {
       std::cout << "request accepted" << std::endl;
-      resp.send_body("<h1>asd</h1><pre>" + (std::string)req + "</pre>");
+      resp.headers["Server"] = "Rum Barrel";
+      resp.body = "<h1>asd</h1><pre>" + (std::string)req + "</pre>";
     });
 
     server->add_path<Rum::HTTP::GET>("/.*", [](const Rum::HTTP::Request& req, Rum::HTTP::Response& resp) {
       std::cout << "request accepted" << std::endl;
-      resp.send_body("<h1>Hello World</h1><pre>" + (std::string)req + "</pre>");
+      resp.body = "<h1>Hello World</h1><pre>" + (std::string)req + "</pre>";
     });
 
     server->listen();
