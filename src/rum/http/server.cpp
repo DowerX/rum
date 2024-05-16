@@ -2,8 +2,11 @@
 #include <rum/tcp/error.h>
 #include <rum/tcp/server.h>
 #include <rum/tcp/utility.h>
+#include <algorithm>
+#include <cstddef>
 #include <iostream>
 #include <regex>
+#include <stdexcept>
 #include <string>
 
 namespace Rum::HTTP {
@@ -28,8 +31,11 @@ Server::Server(unsigned int port, size_t worker_count, size_t buffer_size) : Rum
           tasks.pop();
         }
 
+#ifdef DEBUG
         std::cout << "Worker #" << i << " accepted a connection." << std::endl;
-
+#else
+        (void)i;
+#endif
         handler(task.client_sock, task.sockaddr, buffer);
         if (int status = close(task.client_sock); status == TCP::Error::UNKNOWN) {
           std::cerr << TCP::to_string(task.sockaddr) << ": " << TCP::Error((TCP::Error::Type)status).what() << std::endl;
@@ -37,7 +43,9 @@ Server::Server(unsigned int port, size_t worker_count, size_t buffer_size) : Rum
       }
     });
     workers.emplace_back(std::move(worker));
+#ifdef DEBUG
     std::cout << "Worker #" << i << " created" << std::endl;
+#endif
   }
 }
 
@@ -88,8 +96,9 @@ Method string_to_method(std::string text) {
 
 void Server::handler(int client_sock, const sockaddr_in& client_address, char* buffer) {
   std::string address = TCP::to_string(client_address);
+#ifdef DEBUG
   std::cout << address << ": connected" << std::endl;
-
+#endif
   Request request;
 
   enum Stage { METHOD, HEADER, BODY };
@@ -152,10 +161,13 @@ void Server::handler(int client_sock, const sockaddr_in& client_address, char* b
             }
           }
         } else {
-          request.set_header(it->str(1), it->str(2));
+          std::string key(it->str(1));
+          std::transform(key.begin(), key.end(), key.begin(), [](unsigned char c) { return std::tolower(c); });
+          request.set_header(key, it->str(2));
         }
       }
-      message = message.substr(message.find("\r\n\r\n"));
+
+      message = message.substr(message.find("\r\n\r\n") + 4);
 
       if (Method method = request.get_method(); method == POST || method == PUT)
         stage = BODY;
@@ -164,6 +176,17 @@ void Server::handler(int client_sock, const sockaddr_in& client_address, char* b
     }
 
     if (stage == BODY) {
+      std::cout << "here" << std::endl;
+
+      try {
+        size_t content_length = std::stoul(request.get_header("content-length"));
+        std::cout << message.size() << " " << content_length << std::endl;
+        if (message.size() < content_length)
+          continue;
+      } catch (std::out_of_range) {
+      } catch (std::invalid_argument e) {
+        std::cerr << "invlaid Content-Length header" << std::endl;
+      }
       request.set_body(message);
       break;
     }

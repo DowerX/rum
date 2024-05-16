@@ -13,6 +13,7 @@ class Request {
 
   Method get_method() const { return method; }
   URI& get_uri() { return uri; }
+  URI copy_uri() const { return uri; }
 
   const std::map<std::string, std::string>& get_headers() const { return headers; }
   std::string get_header(std::string name) const { return headers.at(name); }

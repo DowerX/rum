@@ -2,6 +2,7 @@
 #include <exception>
 #include <iostream>
 #include <regex>
+#include <format>
 #include <string>
 
 namespace Rum::HTTP {
@@ -27,11 +28,13 @@ URI::operator std::string() const {
 }
 
 URI::URI(const std::string& uri) {
-  std::regex uri_regex(R"((([\w\d]+):\/\/)?(([\w\d]+)(:([\w\d]+)?)@)?([\w\d\.]+)(:(\d+))?(\/?[\w\d\.\/]+)?(\?([\w\d\=\&]+))?(\#([\w\d]*))?)");
+  std::regex uri_regex(R"((([\w\d]+):\/\/)?(([\w\d]+)(:([\w\d]+)?)@)?([\w\d\.]+)(:(\d+))?(\/?[\w\d\.\/]+)?(\?([^#]+))?(\#([\w\d]*))?)");
 
   std::smatch match;
 
+#ifdef DEBUG
   std::cout << uri << std::endl;
+#endif
 
   if (std::regex_match(uri.cbegin(), uri.cend(), match, uri_regex)) {
 #define MATCH(var, i)   \

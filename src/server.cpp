@@ -1,4 +1,6 @@
-#include <flags/flags.h>
+#ifdef USE_FLAGS
+#include <flags-cpp/flags-cpp.h>
+#endif
 #include <rum/http/http.h>
 #include <rum/tcp/error.h>
 #include <csignal>
@@ -7,6 +9,8 @@
 Rum::HTTP::Server* server;
 
 int main(int argc, char** argv) {
+#ifdef USE_FLAGS
+
   Flags::Parser parser;
   int* port = parser.add<int>("port", "tcp port number", false, 8080);
   unsigned long int* workers = parser.add<unsigned long int>("workers", "number of worker threads", false, 10);
@@ -17,6 +21,11 @@ int main(int argc, char** argv) {
     parser.help();
     return -1;
   }
+
+#else
+  int* port = new int(argc >= 2 ? atoi(argv[1]) : 8080);
+  unsigned long* workers = new unsigned long(10);
+#endif
 
   std::cout << "Port: " << *port << std::endl;
   std::cout << "Workers: " << *workers << std::endl;
@@ -37,8 +46,13 @@ int main(int argc, char** argv) {
 
     server->add_path<Rum::HTTP::GET>("/cookie", [](const Rum::HTTP::Request& req, Rum::HTTP::Response& resp) {
       std::cout << "request accepted" << std::endl;
-      resp.cookies.push_back(Rum::HTTP::Cookie("testCookie", "valueOfCookie", "/", 60*60));
+      resp.cookies.push_back(Rum::HTTP::Cookie("testCookie", "valueOfCookie", "/", 60 * 60));
       resp.body = "<h1>Cookie</h1><pre>" + (std::string)req + "</pre>";
+    });
+
+    server->add_path<Rum::HTTP::POST>("/add", [](const Rum::HTTP::Request& req, Rum::HTTP::Response& resp) {
+      std::cout << (std::string)req << std::endl;
+      resp.body = "<h1>Hello World</h1><pre>" + (std::string)req + "</pre>";
     });
 
     server->add_path<Rum::HTTP::GET>("/.*", [](const Rum::HTTP::Request& req, Rum::HTTP::Response& resp) {
